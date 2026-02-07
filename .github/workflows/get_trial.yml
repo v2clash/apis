@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 完整历史，方便后续 diff
+          fetch-depth: 0
 
       - name: 设置 Python
         uses: actions/setup-python@v5
@@ -40,22 +40,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 ruamel.yaml json5 pyyaml
 
-      # 第一阶段：更新 trial.cfg
       - name: 更新 trial 列表
         run: python list.py
 
-      # 第二阶段：执行自动领取/更新逻辑
       - name: 执行自动领取
         run: python get_trial.py
 
       - name: 更新 URL（如有）
         run: python get_trial_update_url.py
 
-      # 统一提交变更（推荐使用此 action）
       - name: Commit & Push changes (if any)
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto update trial config & collected data ${{ github.run_id }}"
-          file_pattern: trial.cfg data/*.json temp/*.yaml   # 根据实际情况修改
+          file_pattern: trial.cfg
           skip_fetch: true
           skip_dirty_check: false
