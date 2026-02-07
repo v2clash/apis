@@ -364,7 +364,7 @@ if __name__ == '__main__':
         # 可以添加更多GitHub raw文件
     ]
     
-    max_pages_to_crawl_per_source = 20 # 每个Telegram来源最多抓取的页数
+    max_pages_to_crawl_per_source = 5 # 每个Telegram来源最多抓取的页数
     concurrent_workers = 15 # 并发测试URL连通性的工作线程数
 
     main(start_urls_list, github_urls_list, max_pages_to_crawl_per_source, concurrent_workers)
