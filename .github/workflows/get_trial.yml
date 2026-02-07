@@ -53,6 +53,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto update trial config & collected data ${{ github.run_id }}"
-          file_pattern: trial.cfg
+          file_pattern: trial trial.cfg
           skip_fetch: true
           skip_dirty_check: false
