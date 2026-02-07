@@ -1,0 +1,83 @@
+name: Collect List and Auto Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */2 * * *'
+
+permissions: write-all
+
+jobs:
+  update-trial-cfg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: 运行
+        run: python list.py
+
+      - name: Commit and push changes (only if necessary)
+        if: ${{ always() }}  # Always run this step, even on failure
+        run: |
+         git config --global user.email "actions@github.com"
+         git config --global user.name "GitHub Actions"
+         git stash push -m "local changes"
+         git pull origin main
+         git stash pop
+         git add trial.cfg
+         if [[ -n $(git status -s trial.cfg) ]]; then
+         git commit -m "Update trial.cfg"
+         git push origin main
+         fi
+
+  auto-update:
+    runs-on: ubuntu-latest
+    needs: update-trial-cfg
+    timeout-minutes: 90
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      TZ: Asia/Shanghai
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DDAL_EMAIL: ${{ secrets.DDAL_EMAIL }}
+      DDAL_PASSWORD: ${{ secrets.DDAL_PASSWORD }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装依赖
+        run: pip install requests beautifulsoup4 ruamel.yaml json5 pyyaml
+
+      - name: Run get_trial.py
+        run: python get_trial.py
+
+      - name: Commit
+        id: commit
+        continue-on-error: true
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add .
+          git commit -m "${{ github.workflow }} https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          git pull --rebase
+      - uses: ad-m/github-push-action@master
+        if: ${{ steps.commit.outcome == 'success' }}
+      - name: Run get_trial_update_url.py
+        run: python get_trial_update_url.py
+          rm -rf temp-repo || true
